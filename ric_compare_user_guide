@@ -1,0 +1,79 @@
+RIC Compare Tool - User Guide
+Overview
+The RIC Compare Tool (ric_compare.py) is a Python-based script designed to analyze satellite deviations in the Radial-In-Track-Cross-Track (RIC) frame. It allows users to compare a master satellite against one or more target satellites over time and generate detailed visualizations and reports.
+
+Key Features:
+TLE File Support: Compare satellite positions using Two-Line Element (TLE) files.
+Forecasting: Propagate satellite positions over a user-defined duration.
+Visualization: Generate RIC deviation plots and summary reports.
+Orbit-style 4-panel plots: For deeper insights when comparing two satellites.
+Requirements
+Python Dependencies
+The following Python libraries are required to run the tool:
+
+numpy
+matplotlib
+sgp4
+csv
+datetime
+os
+sys
+You can install the dependencies using:
+
+bash
+pip install -r requirements.txt
+Input Files
+Master TLE File: A TLE file for the reference satellite.
+Comparison TLE Files: One or more TLE files for the satellites to be compared.
+How to Use
+Basic Usage To run a basic comparison, provide the master TLE file and one or more comparison TLE files:
+
+bash
+python ric_compare.py master.txt sat1.txt sat2.txt ...
+Replace master.txt, sat1.txt, sat2.txt, etc., with the respective TLE file paths.
+
+Forecasting To propagate satellite positions for a specific number of days, use the --forecast-days option:
+
+bash
+python ric_compare.py master.txt sat1.txt --forecast-days 3
+This forecasts RIC deviations for 3 days.
+
+Outputs
+
+RIC CSV Files: A CSV file is generated for each comparison satellite with RIC deviations.
+Plots: RIC deviation plots are saved as PNG files.
+RMS Summary: A CSV file summarizing the Root Mean Square (RMS) deviations for all satellites.
+Advanced Visualization If exactly two comparison satellites are provided, the script generates additional orbit-style plots:
+
+bash
+python ric_compare.py master.txt sat1.txt sat2.txt
+Output Directory All outputs are stored in a directory named RIC_Output. This directory is automatically created if it doesn't exist.
+
+Example Workflow
+1. Set Up Input Files
+Prepare TLE files for the master satellite and the comparison satellites. Save them in a directory.
+
+2. Run the Tool
+Run the script with the desired options. For example:
+
+bash
+python ric_compare.py master.txt sat1.txt sat2.txt --forecast-days 2
+3. View Outputs
+Navigate to the RIC_Output directory.
+Open the generated CSV files and plots to analyze the RIC deviations.
+Troubleshooting
+Common Errors
+File Not Found: Ensure the TLE file paths are correct and accessible.
+
+TLE Format Error: Verify that the TLE files follow the standard two-line format.
+
+Python Dependency Error: Install the required Python libraries using:
+
+bash
+pip install -r requirements.txt
+Incorrect Forecast Days Option: Ensure the --forecast-days argument is followed by a valid integer.
+
+Additional Notes
+The tool assumes that all input TLE files are in the same format and time frame.
+For detailed analysis, review the generated plots and CSV files.
+Contact the repository maintainer for further support.
