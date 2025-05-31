@@ -222,5 +222,7 @@ if st.sidebar.checkbox("Compare with multiple targets (batch mode)"):
             report_lines.append(f"Target: {tname} ({tid}) | Min Dist: {min_dist:.2f} km | Breaches: {breach_count}")
 
         st.markdown("### 📑 Batch Report")
-        st.text("\n".join(report_lines))
-        st.download_button("📄 Download Report", data="\n".join(report_lines), file_name="RIC_Batch_Report.txt")
+        st.text("
+".join(report_lines))
+        st.download_button("📄 Download Report", data="
+".join(report_lines), file_name="RIC_Batch_Report.txt")
