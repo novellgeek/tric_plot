@@ -1,0 +1,58 @@
+# Requirements:
+# pip install sgp4
+
+from sgp4.api import Satrec
+import sys
+
+def extract_tle_for_norad(tle_filename, norad_id):
+    """
+    Given a file containing multiple TLEs (with or without name lines),
+    return the two TLE lines for the satellite matching the NORAD ID.
+    """
+    with open(tle_filename, "r") as f:
+        lines = [line.strip() for line in f if line.strip()]
+    for i in range(len(lines) - 1):
+        # Case 1: No name line
+        if lines[i].startswith("1 ") and lines[i+1].startswith("2 "):
+            this_id = lines[i].split()[1]
+            if this_id == str(norad_id):
+                return lines[i], lines[i+1]
+        # Case 2: Name line present
+        if (i < len(lines) - 2
+            and lines[i].startswith("0 ")
+            and lines[i+1].startswith("1 ")
+            and lines[i+2].startswith("2 ")):
+            this_id = lines[i+1].split()[1]
+            if this_id == str(norad_id):
+                return lines[i+1], lines[i+2]
+    return None, None
+
+def main():
+    # --- USER CONFIGURATION ---
+    tle_file = "my_satellites.txt"  # Path to your multi-TLE file
+    print("Enter NORAD ID:")
+    norad_id = input().strip()      # User enters the NORAD ID
+
+    # --- Extract TLE for selected NORAD ID ---
+    line1, line2 = extract_tle_for_norad(tle_file, norad_id)
+    if not (line1 and line2):
+        print(f"TLE not found for NORAD ID {norad_id}")
+        sys.exit(1)
+    print("TLE found:")
+    print(line1)
+    print(line2)
+
+    # --- Create satellite object for use with SGP4 ---
+    try:
+        sat = Satrec.twoline2rv(line1, line2)
+        # Now you can propagate, plot, or analyze the satellite using 'sat'
+        # Example: propagate to a specific date/time (see sgp4 docs for details)
+        # import datetime
+        # jd, fr = jday(2024, 6, 1, 0, 0, 0.0)
+        # e, r, v = sat.sgp4(jd, fr)
+        print("Satellite object created and ready for propagation.")
+    except Exception as e:
+        print("Error creating Satrec object:", e)
+
+if __name__ == "__main__":
+    main()
