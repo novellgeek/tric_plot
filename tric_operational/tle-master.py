@@ -4,8 +4,8 @@ def main():
     try:
         base_url = "https://www.space-track.org"
         auth_path = "/ajaxauth/login"
-        user_name = "hqjfnz.space.operations.centre@nzdf.mil.nz"  # Replace with your actual username
-        password = "N3bula-Chugg6-1"         # Replace with your actual password
+        user_name = "your spacetrack username"  # Replace with your actual username
+        password = "yourpassword"         # Replace with your actual password
         query = "/basicspacedata/query/class/gp/orderby/NORAD_CAT_ID/format/3le"
 
         session = requests.Session()
