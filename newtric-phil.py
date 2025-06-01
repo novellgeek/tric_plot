@@ -6,8 +6,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from sgp4.api import Satrec, jday
-from io import StringIO
 import plotly.graph_objects as go
+import plotly.express as px
+import matplotlib.dates as mdates
+from matplotlib.backends.backend_agg import RendererAgg
+import streamlit.components.v1 as components
+from io import StringIO
 
 st.set_page_config(layout="wide")
 st.title("🛰️ RIC Deviation Analyzer with NORAD Lookup")
@@ -28,7 +32,7 @@ def load_tle_dict(path):
             raw_id = line1.split()[1]
             numeric_id = ''.join(filter(str.isdigit, raw_id))
             tle_dict[numeric_id] = (name, line1, line2)
-        except:
+        except Exception:
             pass
         i += 3
     return tle_dict
@@ -64,6 +68,13 @@ def plot_3d_orbits(r1, r2):
     fig.update_layout(title='3D ECI Orbits', scene=dict(xaxis_title='X (km)', yaxis_title='Y (km)', zaxis_title='Z (km)'))
     return fig
 
+def fig_to_png(fig):
+    import io
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png")
+    buf.seek(0)
+    return buf
+
 # Load TLEs into dictionary
 try:
     tle_dict = load_tle_dict(TLE_FILE_PATH)
@@ -98,6 +109,7 @@ if master_id in tle_dict and target_id in tle_dict:
 
     tabs = st.tabs(["📊 RIC Plot", "🧭 Orbit-Style 4-Panel", "🌍 3D Orbit", "📄 CSV Export", "⚠️ Alerts"])
 
+    # --- Tab 0: RIC Plot ---
     with tabs[0]:
         df = pd.DataFrame({
             "UTC Time": times,
@@ -124,13 +136,8 @@ if master_id in tle_dict and target_id in tle_dict:
             "Avg Speed (km/min)": float(np.mean(np.linalg.norm(np.diff(ric[start_idx:end_idx+1], axis=0), axis=1)))
         })
 
+    # --- Tab 1: 4-Panel Plot ---
     with tabs[1]:
-        import plotly.express as px
-        import plotly.graph_objs as go
-        import matplotlib.dates as mdates
-        from matplotlib.backends.backend_agg import RendererAgg
-        import streamlit.components.v1 as components
-
         fig, axs = plt.subplots(2, 2, figsize=(14, 8))
         fig.patch.set_facecolor("white")
 
@@ -166,29 +173,23 @@ if master_id in tle_dict and target_id in tle_dict:
         plt.tight_layout()
         st.pyplot(fig)
 
-        # Optional: Export buttons for each subplot
         st.download_button("📷 Download All 4-Panel Plot (PNG)", data=fig_to_png(fig), file_name=f"RIC_{master_id}_4panel.png")
 
-def fig_to_png(fig):
-    import io
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png")
-    buf.seek(0)
-    return buf
-
+    # --- Tab 2: 3D Orbit ---
     with tabs[2]:
-    fig3d = plot_3d_orbits(r1[start_idx:end_idx+1], r2[start_idx:end_idx+1])
+        fig3d = plot_3d_orbits(r1[start_idx:end_idx+1], r2[start_idx:end_idx+1])
         st.plotly_chart(fig3d, use_container_width=True)
 
-    with tabs[2]:
+    # --- Tab 3: CSV Export ---
+    with tabs[3]:
         filtered_csv = df_filtered.reset_index().to_csv(index=False)
         st.download_button("📥 Download Filtered RIC CSV", filtered_csv, file_name=f"RIC_filtered_{master_id}_vs_{target_id}.csv")
 
         full_csv = df.set_index("UTC Time").to_csv()
         st.download_button("📥 Download Full RIC CSV", full_csv, file_name=f"RIC_{master_id}_vs_{target_id}.csv")
-        
 
-    with tabs[3]:
+    # --- Tab 4: Alerts ---
+    with tabs[4]:
         dist = np.linalg.norm(ric, axis=1)
         min_dist = np.min(dist)
         breach = dist > threshold_km
@@ -222,7 +223,5 @@ if st.sidebar.checkbox("Compare with multiple targets (batch mode)"):
             report_lines.append(f"Target: {tname} ({tid}) | Min Dist: {min_dist:.2f} km | Breaches: {breach_count}")
 
         st.markdown("### 📑 Batch Report")
-        st.text("
-".join(report_lines))
-        st.download_button("📄 Download Report", data="
-".join(report_lines), file_name="RIC_Batch_Report.txt")
+        st.text("\n".join(report_lines))
+        st.download_button("📄 Download Report", data="\n".join(report_lines), file_name="RIC_Batch_Report.txt")
