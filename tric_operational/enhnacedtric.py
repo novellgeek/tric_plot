@@ -16,7 +16,7 @@ from io import StringIO
 st.set_page_config(layout="wide")
 st.title("🛰️ RIC Deviation Analyzer with NORAD Lookup")
 
-TLE_FILE_PATH = "C:/Users/HP/Scripts/my_satellites.txt"
+TLE_FILE_PATH = "C:/Users/HP/Scripts/my_satellites.txt" # edit the file location based on installation
 
 # ------------------- TLE Loader ----------------------
 def load_tle_dict(path):
