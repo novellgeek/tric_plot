@@ -1,0 +1,90 @@
+import streamlit as st
+from sgp4.api import Satrec, jday
+from datetime import datetime, timezone
+
+def extract_tle_for_norad(tle_filename, norad_id):
+    with open(tle_filename, "r") as f:
+        lines = [line.strip() for line in f if line.strip()]
+    for i in range(len(lines) - 1):
+        # Case 1: No name line
+        if lines[i].startswith("1 ") and lines[i+1].startswith("2 "):
+            this_id = lines[i].split()[1]
+            if this_id == str(norad_id):
+                return lines[i], lines[i+1]
+        # Case 2: Name line present
+        if (i < len(lines) - 2
+            and lines[i].startswith("0 ")
+            and lines[i+1].startswith("1 ")
+            and lines[i+2].startswith("2 ")):
+            this_id = lines[i+1].split()[1]
+            if this_id == str(norad_id):
+                return lines[i+1], lines[i+2]
+    return None, None
+
+def get_norad_ids(tle_filename):
+    """Scan the file for all NORAD IDs present (for dropdown selection)"""
+    ids = set()
+    with open(tle_filename, "r") as f:
+        lines = [line.strip() for line in f if line.strip()]
+    i = 0
+    while i < len(lines) - 1:
+        if lines[i].startswith("1 ") and lines[i+1].startswith("2 "):
+            ids.add(lines[i].split()[1])
+            i += 2
+        elif (i < len(lines) - 2 and lines[i].startswith("0 ")
+              and lines[i+1].startswith("1 ") and lines[i+2].startswith("2 ")):
+            ids.add(lines[i+1].split()[1])
+            i += 3
+        else:
+            i += 1
+    return sorted(list(ids))
+
+st.title("Satellite TLE Extractor and Propagator")
+
+tle_file = st.text_input("Enter path to multi-satellite TLE file:", value="my_satellites.txt")
+
+if tle_file:
+    try:
+        norad_ids = get_norad_ids(tle_file)
+    except Exception as e:
+        st.error(f"Could not read TLE file: {e}")
+        st.stop()
+else:
+    st.warning("Please enter a TLE file path.")
+    st.stop()
+
+st.write("Found these NORAD IDs in the TLE file:")
+st.write(', '.join(norad_ids))
+
+norad_id = st.selectbox("Select a NORAD ID:", norad_ids)
+
+if norad_id:
+    line1, line2 = extract_tle_for_norad(tle_file, norad_id)
+    if line1 and line2:
+        st.success(f"TLE for NORAD ID {norad_id}:")
+        st.code(f"{line1}\n{line2}")
+        try:
+            sat = Satrec.twoline2rv(line1, line2)
+            # Display some basic orbital elements
+            st.write("### Orbital Elements")
+            st.write(f"Semi-major axis (km): {sat.a:.2f}")
+            st.write(f"Eccentricity: {sat.ecco:.7f}")
+            st.write(f"Inclination (deg): {sat.inclo*180/3.141592653589793:.3f}")
+            st.write(f"RAAN (deg): {sat.nodeo*180/3.141592653589793:.3f}")
+            st.write(f"Argument of Perigee (deg): {sat.argpo*180/3.141592653589793:.3f}")
+            st.write(f"Mean Anomaly (deg): {sat.mo*180/3.141592653589793:.3f}")
+            # Propagate to now
+            now = datetime.utcnow()
+            jd, fr = jday(now.year, now.month, now.day, now.hour, now.minute, now.second + now.microsecond * 1e-6)
+            error, position, velocity = sat.sgp4(jd, fr)
+            if error == 0:
+                st.write("### Current ECI Position (km):")
+                st.write(f"X: {position[0]:.2f}")
+                st.write(f"Y: {position[1]:.2f}")
+                st.write(f"Z: {position[2]:.2f}")
+            else:
+                st.warning(f"SGP4 propagation error code: {error}")
+        except Exception as e:
+            st.error(f"Error creating Satrec object: {e}")
+    else:
+        st.error(f"TLE not found for NORAD ID {norad_id}")
